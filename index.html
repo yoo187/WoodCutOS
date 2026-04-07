@@ -198,7 +198,6 @@
 </div>
 
 <script>
-    // Scripts blijven exact zoals gevraagd
     let app = {
         currentId: null,
         config: { sw: 2440, sh: 1220, kerf: 3.2, platePrice: 42.50 },
@@ -333,16 +332,7 @@
         let pool = [];
         app.items.forEach((it, idx) => {
             for(let q=0; q<it.qty; q++) {
-                if (it.w > app.config.sw) {
-                    let overschot = it.w;
-                    while (overschot > 0) {
-                        let deelW = Math.min(overschot, app.config.sw);
-                        pool.push({w: deelW, h: it.h, id: `p-${idx}-${q}-s${overschot}`});
-                        overschot -= deelW;
-                    }
-                } else {
-                    pool.push({w: it.w, h: it.h, id: `p-${idx}-${q}`});
-                }
+                pool.push({w: it.w, h: it.h, id: `p-${idx}-${q}`});
             }
         });
         
@@ -361,8 +351,9 @@
                     if(fit) {
                         let fs = p.free[fit.j];
                         p.parts.push({ x:fs.x, y:fs.y, fw:fit.w, fh:fit.h, id: itm.id });
-                        let rw = fs.w-fit.w, rh = fs.h-fit.h;
                         p.free.splice(fit.j,1);
+                        // Bereken nieuwe vrije ruimtes met zaagsnede verlies
+                        let rw = fs.w-fit.w, rh = fs.h-fit.h;
                         if(rw > rh) {
                             if(rw > app.config.kerf) p.free.unshift({x:fs.x+fit.w+app.config.kerf, y:fs.y, w:rw-app.config.kerf, h:fs.h});
                             if(rh > app.config.kerf) p.free.unshift({x:fs.x, y:fs.y+fit.h+app.config.kerf, w:fit.w, h:rh-app.config.kerf});
@@ -408,7 +399,7 @@
             const isZoomed = app.zoomedPlates.includes(idx);
             const wrap = document.createElement('div');
             wrap.className = 'plate-container';
-            wrap.innerHTML = `<div class="plate-header"><span>PLAAT #${idx+1}</span><span>${p.w}x${p.h}mm</span></div>
+            wrap.innerHTML = `<div class="plate-header"><span>VOLLE PLAAT #${idx+1}</span><span>${p.w}x${p.h}mm</span></div>
                 <div class="scroll-area"><div class="canvas-wrapper ${isZoomed ? 'zoomed' : ''}"><canvas id="c-${idx}"></canvas></div></div>
                 <div class="zoom-bar"><button class="btn-zoom ${isZoomed ? 'active' : ''}" onclick="toggleZoom(${idx})">${isZoomed ? 'RESET' : 'ZOOM 200%'}</button></div>`;
             container.appendChild(wrap);
@@ -416,8 +407,11 @@
             const canvas = wrap.querySelector('canvas');
             canvas.width = p.w; canvas.height = p.h;
             const ctx = canvas.getContext('2d');
-            ctx.fillStyle = "#0a0a0a"; ctx.fillRect(0,0,p.w,p.h);
+            
+            // Achtergrond van de hele plaat
+            ctx.fillStyle = "#111"; ctx.fillRect(0,0,p.w,p.h);
 
+            // Teken reststukken (gearcierd)
             p.free.forEach(f => {
                 if(f.w < 5 || f.h < 5) return;
                 ctx.save();
@@ -429,18 +423,21 @@
                 ctx.restore();
                 if(f.w > 80 && f.h > 40) {
                     ctx.fillStyle = "rgba(255, 215, 0, 0.6)"; 
-                    ctx.font = `bold ${Math.min(f.w/6, 40)}px 'JetBrains Mono'`;
+                    ctx.font = `bold ${Math.min(f.w/8, 30)}px 'JetBrains Mono'`;
                     ctx.textAlign = "center"; ctx.fillText(`${Math.round(f.w)}x${Math.round(f.h)}`, f.x + f.w/2, f.y + f.h/2);
                 }
             });
 
+            // Teken de gezaagde stukken
             p.parts.forEach(pt => {
                 const isDone = app.done.includes(pt.id);
                 ctx.fillStyle = isDone ? "#00FF85" : "#C19A6B";
                 ctx.fillRect(pt.x, pt.y, pt.fw, pt.fh);
                 ctx.strokeStyle = "#000"; ctx.lineWidth = 4; ctx.strokeRect(pt.x, pt.y, pt.fw, pt.fh);
-                let fontSize = Math.min(pt.fw / 6, pt.fh / 2, 60); 
-                if (fontSize > 12) {
+                
+                // Maten in het midden van het stuk
+                let fontSize = Math.min(pt.fw / 6, pt.fh / 3, 50); 
+                if (fontSize > 10) {
                     ctx.fillStyle = isDone ? "#000" : "#fff";
                     ctx.font = `bold ${fontSize}px 'JetBrains Mono'`; ctx.textAlign = "center"; ctx.textBaseline = "middle";
                     ctx.fillText(`${pt.fw}x${pt.fh}`, pt.x + pt.fw/2, pt.y + pt.fh/2);
