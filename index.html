@@ -399,7 +399,7 @@
             const isZoomed = app.zoomedPlates.includes(idx);
             const wrap = document.createElement('div');
             wrap.className = 'plate-container';
-            wrap.innerHTML = `<div class="plate-header"><span>VOLLE PLAAT #${idx+1}</span><span>${p.w}x${p.h}mm</span></div>
+            wrap.innerHTML = `<div class="plate-header"><span>PLAAT #${idx+1}</span><span>${p.w}x${p.h}mm</span></div>
                 <div class="scroll-area"><div class="canvas-wrapper ${isZoomed ? 'zoomed' : ''}"><canvas id="c-${idx}"></canvas></div></div>
                 <div class="zoom-bar"><button class="btn-zoom ${isZoomed ? 'active' : ''}" onclick="toggleZoom(${idx})">${isZoomed ? 'RESET' : 'ZOOM 200%'}</button></div>`;
             container.appendChild(wrap);
